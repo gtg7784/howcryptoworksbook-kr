@@ -27,6 +27,7 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             You are an automated upstream sync agent for the Korean translation of "How Crypto Actually Works".
             Your job is to detect changes in the upstream English repository and create a PR with the Korean translation of those changes.
