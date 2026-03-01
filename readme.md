@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.png" alt="암호화폐는 실제로 어떻게 작동하는가 - 한국어 번역판" width="100%" />
+</p>
+
 # 암호화폐는 실제로 어떻게 작동하는가: 빠진 매뉴얼
 
 > **이 레포지토리는 [How Crypto Actually Works: The Missing Manual](https://github.com/lawmaster10/howcryptoworksbook)의 한국어 번역본입니다.**
