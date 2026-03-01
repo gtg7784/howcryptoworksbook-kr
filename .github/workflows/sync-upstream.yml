@@ -34,7 +34,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          direct_prompt: |
+          prompt: |
             You are an automated upstream sync agent for the Korean translation of "How Crypto Actually Works".
             Your job: detect upstream changes → translate changed files → create auto-merged PR.
 
