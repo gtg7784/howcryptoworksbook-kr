@@ -17,106 +17,26 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      issues: write
-      id-token: write
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      FORCE_SYNC: ${{ inputs.force || 'false' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: anthropics/claude-code-action@01e756b34ef7a1447e9508f674143b07d20c2631 # pin to SDK 0.2.25 (v1 has P1 bug #892)
+      - uses: actions/setup-python@v5
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          prompt: |
-            You are an automated upstream sync agent for the Korean translation of "How Crypto Actually Works".
-            Your job is to detect changes in the upstream English repository and create a PR with the Korean translation of those changes.
+          python-version: '3.12'
 
-            ## Step 1: Check for upstream changes
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-            Read `.github/sync-state.json` to get `last_synced_sha`.
-            Then get the current upstream master HEAD:
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-            ```
-            gh api repos/lawmaster10/howcryptoworksbook/commits/master --jq '.sha'
-            ```
-
-            If the HEAD SHA equals `last_synced_sha`, print "No upstream changes detected. Exiting." and STOP here. Do nothing else.
-
-            If force sync is requested (${{ inputs.force }}), skip this check and proceed.
-
-            ## Step 2: Get the diff
-
-            Get the list of changed files between last_synced_sha and the new HEAD:
-
-            ```
-            gh api "repos/lawmaster10/howcryptoworksbook/compare/{last_synced_sha}...{head_sha}" --jq '.files[] | {filename, status, additions, deletions}'
-            ```
-
-            Filter to only `.md` files. Skip `readme.md` and `CONTRIBUTING.md` (these are customized in the Korean repo).
-
-            ## Step 3: Translate each changed file
-
-            For each changed markdown file:
-
-            a) Fetch the NEW English content from upstream:
-            ```
-            gh api "repos/lawmaster10/howcryptoworksbook/contents/{filepath}?ref=master" --jq '.content' | base64 -d
-            ```
-
-            b) Read the CURRENT Korean translation from this repo (if it exists).
-
-            c) If the file is NEW (doesn't exist locally), translate the entire English file to Korean.
-
-            d) If the file EXISTS locally, get the English diff and apply equivalent changes to the Korean translation:
-            - Identify which sections were added, modified, or removed in the English version
-            - Apply the same changes to the corresponding sections in the Korean translation
-            - Preserve all unchanged Korean text exactly as-is
-
-            IMPORTANT: Follow the translation guidelines in CLAUDE.md strictly. Use the glossary. Match the existing translation style.
-
-            ## Step 4: Create a PR and auto-merge
-            
-            a) Create a new branch:
-            ```
-            git checkout -b sync/upstream-{head_sha_first_7_chars}
-            ```
-            
-            b) Stage and commit all translated changes:
-            ```
-            git add -A
-            git commit -m "번역 동기화: upstream {head_sha_first_7_chars}"
-            ```
-            
-            c) Update `.github/sync-state.json` with the new SHA and current timestamp. Commit this too:
-            ```
-            git add .github/sync-state.json
-            git commit -m "chore: update sync state to {head_sha_first_7_chars}"
-            ```
-            
-            d) Push and create a PR:
-            ```
-            git push origin sync/upstream-{head_sha_first_7_chars}
-            ```
-            
-            Create the PR with:
-            - Title: `[자동번역] Upstream 동기화: {short description of changes}`
-            - Body that includes:
-              - List of upstream commits included (with links)
-              - List of files changed
-              - Summary of what was translated
-              - Footer: "⚡ 이 PR은 Claude에 의해 자동 생성되었습니다."
-            - Label: `auto-translation` (create if it doesn't exist)
-            
-            e) After creating the PR, immediately merge it:
-            ```
-            gh pr merge --squash --delete-branch
-            ```
-            This is safe because upstream changes were already reviewed/merged in the original repository.
-            
-            ## Rules
-            - If a file was DELETED upstream, do NOT delete it. Just mention it in the PR body.
-            - NEVER modify readme.md or CONTRIBUTING.md.
-            - Always create a PR first (for traceability), then auto-merge it.
-            - If translation of any file fails, still create the PR with the files that succeeded, note the failures in the PR body, and do NOT auto-merge — leave it for human review.
-          claude_args: "--max-turns 30"
+      - name: Run upstream sync
+        run: python scripts/sync_upstream.py
