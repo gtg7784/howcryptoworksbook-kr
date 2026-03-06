@@ -91,5 +91,5 @@ jobs:
             - If translation of any file fails, still create PR with successes, note failures, do NOT auto-merge.
             - Always create PR first (traceability), then auto-merge.
           claude_args: |
-            --max-turns 50
-            --allowedTools "Read,Write,Edit,Bash(gh:*),Bash(git:*),Bash(curl:*),Bash(base64:*),Bash(jq:*),Bash(cat:*),Bash(echo:*),Bash(python3:*)"
+            --max-turns 75
+            --allowedTools "Read,Write,Edit,MultiEdit,Grep,Glob,Bash(gh:*),Bash(git:*),Bash(curl:*),Bash(base64:*),Bash(jq:*),Bash(cat:*),Bash(echo:*),Bash(python3:*)"
